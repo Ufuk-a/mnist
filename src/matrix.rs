@@ -3,11 +3,12 @@ use std::vec;
 use super::vector::{Vector, VectorError};
 
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Matrix {
     pub elements: Vec<Vector>,
 }
 
+#[derive(Debug, Clone)]
 pub enum MatrixError {
     DimensionMismatch(&'static str),
     DivisionByZero(&'static str),
@@ -21,8 +22,8 @@ impl From<VectorError> for MatrixError {
 }
 
 impl Matrix {
-    pub fn new(capacity_x: usize, capacity_y: usize) -> Self {
-        let elements = vec![Vector::new(capacity_x); capacity_y]; 
+    pub fn new(capacity_x: usize, capacity_y: usize, value: f64) -> Self {
+        let elements = vec![Vector::new(capacity_x, value); capacity_y]; 
         Matrix{elements}
     }
 
@@ -60,7 +61,7 @@ impl Matrix {
     }
 
     pub fn transpose(&self) -> Matrix {
-        let mut elements = vec![Vector::new(self.dim_y()); self.dim_x()];
+        let mut elements = vec![Vector::with_capacity(self.dim_y()); self.dim_x()];
 
         for i in 0..self.dim_x() {
             for j in 0..self.dim_y() {
@@ -131,7 +132,7 @@ impl Mul<&Matrix> for &Matrix {
             return Err(MatrixError::DimensionMismatch("The number of columns in the first matrix must be equal to the number of rows in the second matrix."));
         }
 
-        let mut elements = vec![Vector::new(rhs.dim_x()); self.dim_y()];
+        let mut elements = vec![Vector::with_capacity(rhs.dim_x()); self.dim_y()];
 
         for i in 0..self.dim_y() {
             for j in 0..rhs.dim_x() {
@@ -144,10 +145,10 @@ impl Mul<&Matrix> for &Matrix {
     }
 }
 
-impl Mul<&Vector> for &Matrix {
+impl Mul<Vector> for Matrix {
     type Output = Result<Vector, MatrixError>;
 
-    fn mul(self, rhs: &Vector) -> Self::Output {
+    fn mul(self, rhs: Vector) -> Self::Output {
         if self.dim_x() != rhs.dim() {
             return Err(MatrixError::DimensionMismatch("The number of columns in the matrix must be equal to the number of elements in the vector."));
         }
@@ -158,10 +159,10 @@ impl Mul<&Vector> for &Matrix {
     }
 }
 
-impl Mul<&Matrix> for &Vector {
+impl Mul<Matrix> for Vector {
     type Output = Result<Vector, MatrixError>;
 
-    fn mul(self, rhs: &Matrix) -> Self::Output {
+    fn mul(self, rhs: Matrix) -> Self::Output {
         if self.dim() != rhs.dim_y() {
             return Err(MatrixError::DimensionMismatch("The number of elements in the vector must be equal to the number of rows in the matrix."));
         }
@@ -191,5 +192,12 @@ impl IntoIterator for Matrix {
 
     fn into_iter(self) -> Self::IntoIter {
         self.elements.into_iter()
+    }
+}
+
+impl FromIterator<Vector> for Matrix {
+    fn from_iter<T: IntoIterator<Item = Vector>>(iter: T) -> Self {
+        let elements: Vec<Vector> = iter.into_iter().collect();
+        Matrix { elements }
     }
 }

@@ -1,18 +1,23 @@
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Range, Sub};
 use rand::Rng;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Vector {
     pub elements: Vec<f64>,
 }
 
+#[derive(Debug, Clone)]
 pub enum VectorError {
     DimensionMismatch(&'static str),
     DivisionByZero(&'static str)
 }
 
 impl Vector {
-    pub fn new(capacity: usize) -> Self {
+    pub fn new(capacity: usize, value: f64) -> Self {
+        Vector{elements: (0..capacity).map(|_| value).collect()}
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self { 
         Vector{elements: Vec::with_capacity(capacity)}
     }
 
