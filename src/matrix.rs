@@ -69,7 +69,7 @@ impl Matrix {
             }
         }
 
-        Matrix { elements }
+        Matrix{elements}
     }
 }
 
@@ -87,6 +87,7 @@ impl IndexMut<usize> for Matrix {
     }
 }
 
+
 impl Add<&Matrix> for &Matrix {
     type Output = Result<Matrix, MatrixError>;
 
@@ -95,7 +96,7 @@ impl Add<&Matrix> for &Matrix {
             return Err(MatrixError::DimensionMismatch("The matrices must have the same dimensions."));
         }
 
-        let elements: Vec<Vector> = self.elements.iter().zip(&rhs.elements).map(|(a, b)| a + b).collect::<Result<Vec<_>, _>>()?;
+        let elements: Vec<Vector> = self.elements.iter().zip(&rhs.elements).map(|(a, b)| a + b).collect::<Result<Vec<Vector>, VectorError>>()?;
 
         Ok(Matrix{elements})
     }
@@ -109,18 +110,9 @@ impl Sub<&Matrix> for &Matrix {
             return Err(MatrixError::DimensionMismatch("The matrices must have the same dimensions."));
         }
 
-        let elements: Vec<Vector> = self.elements.iter().zip(&rhs.elements).map(|(a, b)| a - b).collect::<Result<Vec<_>, _>>()?;
+        let elements: Vec<Vector> = self.elements.iter().zip(&rhs.elements).map(|(a, b)| a - b).collect::<Result<Vec<Vector>, VectorError>>()?;
 
         Ok(Matrix{elements})
-    }
-}
-
-impl Mul<f64> for &Matrix {
-    type Output = Matrix;
-
-    fn mul(self, rhs: f64) -> Self::Output {
-        let elements = self.elements.iter().map(|v| v * rhs).collect();
-        Matrix{elements}
     }
 }
 
@@ -141,35 +133,38 @@ impl Mul<&Matrix> for &Matrix {
             }
         }
 
-        Ok(Matrix {elements})
+        Ok(Matrix{elements})
     }
 }
 
-impl Mul<Vector> for Matrix {
+impl Mul<f64> for &Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        let elements = self.elements.iter().map(|v| v * rhs).collect();
+        Matrix{elements}
+    }
+}
+
+impl Mul<&Vector> for &Matrix {
     type Output = Result<Vector, MatrixError>;
 
-    fn mul(self, rhs: Vector) -> Self::Output {
+    fn mul(self, rhs: &Vector) -> Self::Output {
         if self.dim_x() != rhs.dim() {
             return Err(MatrixError::DimensionMismatch("The number of columns in the matrix must be equal to the number of elements in the vector."));
         }
 
-        let result: Vec<f64> = self.elements.iter().map(|row| row.iter().zip(rhs.iter()).map(|(a, b)| a * b).sum()).collect();
+        let result: Vec<f64> = self.elements.iter().map(|row| Vector::dot(row, rhs).unwrap()).collect();
 
         Ok(Vector::from_vec(result))
     }
 }
 
-impl Mul<Matrix> for Vector {
+impl Mul<&Vector> for Matrix {
     type Output = Result<Vector, MatrixError>;
 
-    fn mul(self, rhs: Matrix) -> Self::Output {
-        if self.dim() != rhs.dim_y() {
-            return Err(MatrixError::DimensionMismatch("The number of elements in the vector must be equal to the number of rows in the matrix."));
-        }
-
-        let result: Vec<f64> = (0..rhs.dim_x()).map(|i| self.iter().zip(rhs.iter()).map(|(v, row)| v * row[i]).sum()).collect();
-
-        Ok(Vector::from_vec(result))
+    fn mul(self, rhs: &Vector) -> Self::Output {
+        &self * rhs
     }
 }
 
@@ -181,8 +176,70 @@ impl Div<f64> for &Matrix {
             return Err(MatrixError::DivisionByZero("Cannot divide by zero"));
         }
 
-        let elements = self.elements.iter().map(|v| v / rhs).collect::<Result<Vec<_>, _>>()?;
+        let elements = self.elements.iter().map(|v| v / rhs).collect::<Result<Vec<Vector>, VectorError>>()?;
         Ok(Matrix{elements})
+    }
+}
+
+impl Add for Matrix {
+    type Output = Result<Matrix, MatrixError>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        &self + &rhs
+    }
+}
+
+impl Sub for Matrix {
+    type Output = Result<Matrix, MatrixError>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        &self - &rhs
+    }
+}
+
+impl Mul for Matrix {
+    type Output = Result<Matrix, MatrixError>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        &self * &rhs
+    }
+}
+
+impl Mul<f64> for Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl Mul<Vector> for Matrix {
+    type Output = Result<Vector, MatrixError>;
+
+    fn mul(self, rhs: Vector) -> Self::Output {
+        &self * &rhs
+    }
+}
+
+impl Div<f64> for Matrix {
+    type Output = Result<Matrix, MatrixError>;
+
+    fn div(self, rhs: f64) -> Self::Output {
+        &self / rhs
+    }
+}
+
+impl Mul<&Matrix> for &Vector {
+    type Output = Result<Vector, MatrixError>;
+
+    fn mul(self, rhs: &Matrix) -> Self::Output {
+        if self.dim() != rhs.dim_y() {
+            return Err(MatrixError::DimensionMismatch("The number of elements in the vector must be equal to the number of rows in the matrix."));
+        }
+
+        let result: Vec<f64> = (0..rhs.dim_x()).map(|i| self.iter().zip(rhs.iter()).map(|(v, row)| v * row[i]).sum()).collect();
+
+        Ok(Vector::from_vec(result))
     }
 }
 
@@ -195,9 +252,17 @@ impl IntoIterator for Matrix {
     }
 }
 
+impl AsRef<Matrix> for Matrix {
+    fn as_ref(&self) -> &Matrix {
+        self
+    }
+}
+
+
+
 impl FromIterator<Vector> for Matrix {
     fn from_iter<T: IntoIterator<Item = Vector>>(iter: T) -> Self {
         let elements: Vec<Vector> = iter.into_iter().collect();
-        Matrix { elements }
+        Matrix{elements}
     }
 }

@@ -153,11 +153,7 @@ impl Mul for &Vector {
         if self.dim() != rhs.dim() {
             return Err(VectorError::DimensionMismatch("The vectors must have the same dimensionality."));
         }
-        let elements = self.elements
-            .iter()
-            .zip(&rhs.elements)
-            .map(|(&a, &b)| a * b)
-            .collect();
+        let elements = self.elements.iter().zip(&rhs.elements).map(|(&a, &b)| a * b).collect();
         Ok(Vector{elements})
     }
 }
@@ -200,11 +196,89 @@ impl Div<&Vector> for f64 {
     }
 }
 
+impl Add for Vector {
+    type Output = Result<Vector, VectorError>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        &self + &rhs
+    }
+}
+
+impl Sub for Vector {
+    type Output = Result<Vector, VectorError>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        &self - &rhs
+    }
+}
+
+impl Mul for Vector {
+    type Output = Result<Vector, VectorError>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        &self * &rhs
+    }
+}
+
+impl Mul<f64> for Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl Div<f64> for Vector {
+    type Output = Result<Vector, VectorError>;
+
+    fn div(self, rhs: f64) -> Self::Output {
+        &self / rhs
+    }
+}
+
+impl Neg for Vector {
+    type Output = Vector;
+
+    fn neg(self) -> Self::Output {
+        -&self
+    }
+}
+
+impl<T: AsRef<Vector>> Add<T> for Vector {
+    type Output = Result<Vector, VectorError>;
+
+    fn add(self, rhs: T) -> Self::Output {
+        &self + rhs.as_ref()
+    }
+}
+
+impl<T: AsRef<Vector>> Sub<T> for Vector {
+    type Output = Result<Vector, VectorError>;
+
+    fn sub(self, rhs: T) -> Self::Output {
+        &self - rhs.as_ref()
+    }
+}
+
+impl<T: AsRef<Vector>> Mul<T> for Vector {
+    type Output = Result<Vector, VectorError>;
+
+    fn mul(self, rhs: T) -> Self::Output {
+        &self * rhs.as_ref()
+    }
+}
+
 impl IntoIterator for Vector {
     type Item = f64;
     type IntoIter = std::vec::IntoIter<f64>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.elements.into_iter()
+    }
+}
+
+impl FromIterator<f64> for Vector {
+    fn from_iter<I: IntoIterator<Item = f64>>(iter: I) -> Self {
+        Vector { elements: iter.into_iter().collect() }
     }
 }
